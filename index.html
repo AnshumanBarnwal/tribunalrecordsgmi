@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>G.M.I. Tribunal Archive</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- Supabase JS Client Library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#050505;
+    --bg-alt:#0d0d0d;
+    --surface:#121212;
+    --surface-2:#1c1c1c;
+    --border:#333333;
+    --border-strong:#ffffff;
+    --border-soft:#222222;
+    --accent:#ffffff;
+    --accent-glow:rgba(255,255,255,0.25);
+    --accent-ink:#000000;
+    --danger:#ffffff;
+    --danger-bg:#1f0000;
+    --danger-border:#ff3333;
+    --ok:#ffffff;
+    --text:#ffffff;
+    --text-dim:#aaaaaa;
+    --text-faint:#666666;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+    --sidebar-w:270px;
+    --radius:4px;
+    --radius-sm:2px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    overflow-x:hidden;
+    font-size:15px;
+    line-height:1.5;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 60%),
+      linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+  }
+  ::selection{background:var(--accent);color:var(--accent-ink);}
+  a{color:inherit;}
+  button{font-family:var(--font-body);cursor:pointer;-webkit-appearance:none;}
+  input,select,textarea{font-family:var(--font-body);}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text);}
+
+  .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text);font-weight:700;}
+  .hairline{height:1px;background:linear-gradient(90deg,transparent,var(--border-strong),transparent);}
+
+  /* ───────── STARK MARK BADGE ───────── */
+  .mark{
+    width:46px;height:46px;border-radius:0px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--accent);color:var(--accent-ink);
+    font-family:var(--font-display);font-weight:800;font-size:20px;
+    user-select:none;border:1px solid var(--border-strong);
+    box-shadow:0 0 20px rgba(255,255,255,0.15);
+    transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mark:hover{transform:scale(1.06);box-shadow:0 0 30px rgba(255,255,255,0.4);}
+  .mark.danger{background:#ffffff;color:#000000;border-color:#ffffff;}
+  .mark.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+  .mark.small{width:34px;height:34px;font-size:13px;}
+  .mark.trigger{cursor:pointer;}
+
+  /* ───────── LOGIN SCREEN & PROJECTIONS ───────── */
+  #loginScreen{
+    position:fixed;inset:0;z-index:500;display:flex;
+    align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(circle at center, rgba(255,255,255,0.07) 0%, #000000 80%);
+    overflow-y:auto;
+  }
+  .login-grid{
+    width:100%;max-width:980px;display:grid;grid-template-columns:1fr 1.1fr;
+    border:2px solid var(--border-strong);box-shadow:0 0 100px rgba(255,255,255,0.15);
+    background:var(--surface);position:relative;
+  }
+  .login-grid::before{
+    content:'';position:absolute;inset:-1px;
+    background:linear-gradient(45deg, rgba(255,255,255,0.2), transparent 40%, transparent 60%, rgba(255,255,255,0.2));
+    pointer-events:none;
+  }
+  .login-brand{
+    background:#000000;padding:48px 40px;display:flex;flex-direction:column;
+    justify-content:space-between;gap:28px;border-right:1px solid var(--border);
+    position:relative;overflow:hidden;
+  }
+  .login-brand::after{
+    content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05), transparent 50%);
+    pointer-events:none;
+  }
+  .login-brand h1{
+    font-family:var(--font-display);font-size:32px;font-weight:800;letter-spacing:-0.5px;
+    color:var(--text);line-height:1.15;margin-top:20px;text-transform:uppercase;
+  }
+  .login-brand h1 span{color:var(--text);background:#ffffff;color:#000000;padding:2px 8px;display:inline-block;margin-top:4px;}
+  .login-brand p.tag{font-size:13.5px;color:var(--text-dim);margin-top:14px;line-height:1.6;font-weight:400;}
+  .brand-marks{display:flex;gap:12px;align-items:center;}
+  .brand-foot{font-family:var(--font-mono);font-size:11px;color:var(--text-faint);letter-spacing:2px;font-weight:700;}
+  
+  .login-box{padding:48px 40px;display:flex;flex-direction:column;justify-content:center;background:var(--surface);}
+  .login-box .eyebrow{margin-bottom:6px;color:var(--text-dim);}
+  .login-box h2{font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:24px;font-weight:800;text-transform:uppercase;letter-spacing:-0.3px;}
+  
+  /* Quick Fill Credential Selector */
+  .quick-fill-section{
+    margin-bottom:24px;background:#000000;border:1px solid var(--border);
+    padding:14px 16px;box-shadow:inset 0 0 15px rgba(255,255,255,0.03);
+  }
+  .quick-fill-title{
+    font-family:var(--font-mono);font-size:10.5px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--text);margin-bottom:10px;
+    display:flex;align-items:center;justify-content:space-between;font-weight:700;
+  }
+  .quick-fill-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .q-chip{
+    font-family:var(--font-mono);font-size:11px;padding:6px 10px;border-radius:0px;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    cursor:pointer;transition:all 0.15s ease;display:inline-flex;align-items:center;gap:6px;font-weight:700;
+  }
+  .q-chip:hover{
+    background:#ffffff;color:#000000;border-color:#ffffff;
+    transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,255,255,0.3);
+  }
+  .q-chip.owner-chip{border-color:#ffffff;background:#1a1a1a;color:#ffffff;}
+  .q-chip.owner-chip:hover{background:#ffffff;color:#000000;}
+
+  .field{margin-bottom:20px;position:relative;}
+  .field label{
+    display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--text);margin-bottom:8px;font-weight:700;
+  }
+  .field input,.field select,.field textarea{
+    width:100%;background:#000000;border:1px solid var(--border);color:var(--text);
+    padding:14px 16px;font-size:15px;border-radius:0px;outline:none;
+    transition:all 0.2s ease;min-height:48px;font-weight:500;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--border-strong);box-shadow:0 0 20px rgba(255,255,255,0.2);
+    background:#080808;
+  }
+  .field textarea{resize:vertical;min-height:90px;}
+
+  .pass-wrap{position:relative;}
+  .pass-toggle{
+    position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    font-size:10.5px;font-family:var(--font-mono);cursor:pointer;padding:6px 10px;
+    font-weight:700;text-transform:uppercase;letter-spacing:1px;transition:all 0.15s;
+  }
+  .pass-toggle:hover{background:#ffffff;color:#000000;}
+
+  .btn{
+    font-family:var(--font-display);font-weight:800;font-size:14px;letter-spacing:1px;
+    text-transform:uppercase;padding:14px 24px;border-radius:0px;
+    border:1px solid var(--border-strong);background:#000000;color:var(--text);
+    transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1);min-height:50px;
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .btn:hover{
+    background:#ffffff;color:#000000;transform:translateY(-2px);
+    box-shadow:0 6px 25px rgba(255,255,255,0.3);
+  }
+  .btn-primary{background:#ffffff;border-color:#ffffff;color:#000000;}
+  .btn-primary:hover{background:#e6e6e6;border-color:#ffffff;color:#000000;box-shadow:0 6px 30px rgba(255,255,255,0.4);}
+  .btn-danger{background:#000000;border-color:#ffffff;color:#ffffff;}
+  .btn-danger:hover{background:#ffffff;color:#000000;}
+  .btn-sm{padding:9px 16px;font-size:11.5px;min-height:38px;}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+  .btn-block{width:100%;}
+  .err-msg{
+    font-size:13px;color:#ffffff;background:#330000;border:1px solid #ff3333;
+    padding:10px 14px;margin-top:-6px;margin-bottom:18px;display:none;
+    font-family:var(--font-mono);font-weight:600;
+  }
+
+  /* ───────── MODALS ───────── */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:900;
+    display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    width:440px;max-width:100%;background:#0a0a0a;border:2px solid var(--border-strong);
+    padding:34px 30px;box-shadow:0 0 80px rgba(255,255,255,0.2);
+    animation:modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes modalPop{from{opacity:0;transform:scale(0.94);}to{opacity:1;transform:scale(1);}}
+  .modal-box.confirm{width:420px;text-align:center;}
+  .modal-box h3{font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:6px;font-weight:800;text-transform:uppercase;}
+  .modal-box .sub{font-size:13px;color:var(--text-dim);margin-bottom:22px;line-height:1.5;font-family:var(--font-mono);}
+  .modal-actions{display:flex;gap:12px;margin-top:10px;}
+
+  /* ───────── APP SHELL ───────── */
+  #appShell{display:none;min-height:100vh;}
+  .sidebar{
+    width:var(--sidebar-w);background:#000000;border-right:1px solid var(--border);
+    padding:24px 0;display:flex;flex-direction:column;
+    position:fixed;top:0;bottom:0;left:0;z-index:600;
+    transform:translateX(-105%);
+    transition:transform .32s cubic-bezier(.22,.61,.36,1);
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:0 0 80px rgba(0,0,0,0.9);}
+  .sb-brand{padding:0 22px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+  .sb-brand-text{font-family:var(--font-display);font-size:15px;color:var(--text);line-height:1.2;font-weight:800;text-transform:uppercase;}
+  .sb-brand-text small{display:block;font-family:var(--font-mono);font-size:9.5px;color:var(--text-dim);letter-spacing:2px;margin-top:3px;}
+  
+  .nav-item{
+    display:flex;align-items:center;gap:14px;padding:14px 22px;font-size:14px;color:var(--text-dim);
+    font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+    border-left:4px solid transparent;cursor:pointer;transition:all .15s ease;
+  }
+  .nav-item:hover{color:var(--text);background:#121212;}
+  .nav-item.active{color:#000000;border-left-color:#ffffff;background:#ffffff;}
+  .nav-item.active .ic{color:#000000;}
+  .nav-item .ic{width:18px;text-align:center;color:var(--text);font-size:16px;}
+  .nav-section-label{
+    padding:20px 22px 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:2px;
+    color:var(--text-faint);text-transform:uppercase;font-weight:700;
+  }
+  .sidebar-foot{margin-top:auto;padding:20px 22px 0;border-top:1px solid var(--border);}
+  .role-chip{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:1px;padding:6px 12px;
+    display:inline-block;border:1px solid var(--border-strong);background:#ffffff;color:#000000;
+    font-weight:700;text-transform:uppercase;
+  }
+  .role-chip.owner{background:#000000;color:#ffffff;border-color:#ffffff;box-shadow:0 0 10px rgba(255,255,255,0.3);}
+
+  .sidebar-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:550;
+    opacity:0;pointer-events:none;transition:opacity .28s ease;
+  }
+  .sidebar-backdrop.show{opacity:1;pointer-events:auto;}
+
+  .main{margin-left:0;flex:1;min-height:100vh;display:flex;flex-direction:column;}
+  .topbar{
+    height:66px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;padding:0 24px;background:rgba(0,0,0,0.85);position:sticky;top:0;z-index:400;
+    backdrop-filter:blur(10px);gap:16px;
+  }
+  .topbar-left{display:flex;align-items:center;gap:16px;min-width:0;}
+  .hamburger{
+    width:42px;height:42px;border:1px solid var(--border-strong);background:#000000;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;
+  }
+  .hamburger span{width:20px;height:2px;background:var(--text);}
+  .topbar h2{
+    font-family:var(--font-display);font-size:18px;color:var(--text);font-weight:800;
+    text-transform:uppercase;letter-spacing:0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .topbar-right{display:flex;align-items:center;gap:14px;flex:0 0 auto;}
+  .topbar-user{font-family:var(--font-mono);font-size:11.5px;color:var(--text);white-space:nowrap;display:none;font-weight:700;}
+  .content{padding:28px 24px 70px;flex:1;max-width:1120px;width:100%;margin:0 auto;}
+
+  /* Stat cards with interactive filter projections */
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{
+    background:#0a0a0a;border:1px solid var(--border);padding:22px;
+    cursor:pointer;transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1);position:relative;overflow:hidden;
+  }
+  .stat-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;background:transparent;
+    transition:background 0.2s ease;
+  }
+  .stat-card:hover{
+    border-color:var(--border-strong);transform:translateY(-3px);
+    box-shadow:0 10px 30px rgba(255,255,255,0.15);background:#121212;
+  }
+  .stat-card:hover::before{background:#ffffff;}
+  .stat-card .num{font-family:var(--font-display);font-size:32px;color:var(--text);font-weight:800;}
+  .stat-card .lbl{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);
+    text-transform:uppercase;margin-top:8px;font-weight:700;
+  }
+  .stat-card.locked{
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);
+    font-family:var(--font-mono);font-size:11px;letter-spacing:1px;text-align:center;min-height:80px;cursor:default;
+    background:#050505;border-style:dashed;
+  }
+  .stat-card.locked:hover{border-color:var(--border);transform:none;box-shadow:none;}
+
+  .panel{background:#0a0a0a;border:1px solid var(--border);margin-bottom:24px;overflow:hidden;}
+  .panel-head{
+    padding:18px 22px;border-bottom:1px solid var(--border);display:flex;
+    align-items:center;justify-content:space-between;background:#000000;
+  }
+  .panel-head h3{font-family:var(--font-display);font-size:16px;color:var(--text);font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
+  .panel-body{padding:22px;}
+
+  .record-card{
+    border:1px solid var(--border);background:#000000;
+    padding:18px 20px;margin-bottom:14px;display:flex;gap:16px;align-items:flex-start;
+    transition:all 0.2s ease;position:relative;
+  }
+  .record-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 8px 25px rgba(255,255,255,0.1);}
+  .record-card.alert{border:2px solid #ffffff;background:#0f0000;}
+  .record-card.alert:hover{box-shadow:0 0 30px rgba(255,255,255,0.3);}
+  .rc-main{flex:1;min-width:0;}
+  .rc-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+  .rc-user{font-family:var(--font-display);font-size:17px;color:var(--text);font-weight:800;}
+  .rc-id{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);background:#1a1a1a;padding:2px 6px;}
+  .badge{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    padding:4px 10px;border:1px solid var(--border-strong);color:var(--text);font-weight:700;
+    background:#000000;
+  }
+  .badge.sev-minor{background:#111111;color:#ffffff;border-color:#666666;}
+  .badge.sev-moderate{background:#222222;color:#ffffff;border-color:#aaaaaa;}
+  .badge.sev-severe{background:#ffffff;color:#000000;border-color:#ffffff;font-weight:900;}
+  .badge.alert-badge{background:#ffffff;border-color:#ffffff;color:#000000;font-weight:900;}
+  .rc-offenses{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+  .off-pill{
+    font-size:12.5px;background:#141414;border:1px solid var(--border);padding:6px 12px;
+    color:var(--text);display:inline-flex;align-items:center;gap:8px;font-weight:600;
+  }
+  .rc-meta{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:10px;font-weight:500;}
+  .rc-notes{font-size:13px;color:var(--text-dim);margin-top:10px;font-style:italic;background:#080808;padding:8px 12px;border-left:2px solid var(--border-strong);}
+  .rc-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+
+  .empty-state{padding:50px 20px;text-align:center;color:var(--text-dim);font-size:14px;font-family:var(--font-mono);}
+  .restricted-note{
+    font-size:12.5px;color:#ffffff;background:#111111;border:1px solid var(--border-strong);
+    padding:12px 16px;margin-bottom:18px;font-family:var(--font-mono);font-weight:600;
+  }
+
+  .filters-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .filters-row .field{margin-bottom:0;min-width:200px;flex:1;}
+
+  .offense-block{border:1px solid var(--border);background:#000000;padding:16px;margin-bottom:14px;}
+  .offense-block-title{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;color:var(--text);
+    text-transform:uppercase;margin-bottom:14px;font-weight:700;
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  .audit-row{
+    display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);
+    font-size:13px;flex-wrap:wrap;
+  }
+  .audit-row:last-child{border-bottom:none;}
+  .audit-row .a-action{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    padding:3px 10px;border:1px solid var(--border-strong);font-weight:700;
+  }
+  .audit-row .a-action.add{background:#ffffff;color:#000000;}
+  .audit-row .a-action.delete{background:#000000;color:#ffffff;border-color:#ffffff;}
+  .audit-row .a-time{font-family:var(--font-mono);color:var(--text-dim);font-size:11px;}
+
+  .danger-zone{border:2px dashed var(--border-strong);background:#110000;padding:20px;margin-top:10px;}
+  .danger-zone p{font-size:13px;color:var(--text);margin-bottom:14px;font-family:var(--font-mono);}
+
+  .role-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .role-table th{
+    text-align:left;padding:10px 12px;font-family:var(--font-mono);font-size:10.5px;color:var(--text);
+    letter-spacing:1.5px;border-bottom:2px solid var(--border-strong);white-space:nowrap;font-weight:800;
+  }
+  .role-table td{padding:12px 12px;border-bottom:1px solid var(--border);}
+
+  .toast-wrap{
+    position:fixed;bottom:24px;right:24px;left:24px;z-index:1000;
+    display:flex;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none;
+  }
+  .toast{
+    background:#000000;border:2px solid var(--border-strong);
+    padding:14px 20px;font-size:13.5px;color:#ffffff;max-width:360px;
+    box-shadow:0 10px 40px rgba(255,255,255,0.2);animation:toastIn .2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family:var(--font-mono);font-weight:700;
+  }
+  .toast.error{background:#330000;border-color:#ff3333;color:#ffffff;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);}}
+
+  .loading-line{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:30px 0;text-align:center;letter-spacing:2px;}
+
+  /* Passkey Reference Table Modal */
+  .passkey-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px;}
+  .passkey-table th{text-align:left;font-family:var(--font-mono);font-size:10px;color:var(--text);padding:8px 10px;border-bottom:2px solid var(--border-strong);}
+  .passkey-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-family:var(--font-mono);}
+
+  /* ───────── DESKTOP ≥ 900px ───────── */
+  @media (min-width:900px){
+    .login-grid{grid-template-columns:1fr 1.1fr;}
+    .content{padding:36px 40px 80px;}
+    .stat-grid{grid-template-columns:repeat(4,1fr);}
+    .row2{grid-template-columns:1fr 1fr;}
+    .topbar{padding:0 40px;height:72px;}
+    .topbar h2{font-size:20px;}
+    .topbar-user{display:inline;}
+    .hamburger{display:none;}
+    .sidebar-backdrop{display:none;}
+    .sidebar{transform:translateX(0);position:fixed;box-shadow:none;}
+    .main{margin-left:var(--sidebar-w);}
+  }
+  @media (max-width:520px){
+    .login-box,.login-brand{padding:32px 22px;}
+    .stat-grid{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═════════ LOGIN SCREEN ═════════ -->
+<div id="loginScreen">
+  <div class="login-grid">
+    <div class="login-brand">
+      <div>
+        <div class="mark">G</div>
+        <h1>G.M.I.<br><span>Tribunal Archive</span></h1>
+        <p class="tag">A shared record of conduct, offense &amp; discipline kept by the appointed order of this server.</p>
+      </div>
+      
+      <div>
+        <div class="hairline" style="margin-bottom:18px;"></div>
+        <div class="brand-marks" style="margin-bottom:16px;">
+          <div class="mark small ghost" title="Staff Clearance I">I</div>
+          <div class="mark small ghost" title="Staff Clearance II">II</div>
+          <div class="mark small ghost trigger" id="hiddenTrigger" title="Sealed Owner Passage">III</div>
+        </div>
+        <div class="brand-foot">SYSTEM BUILD 5.0 · BLACK &amp; WHITE EDITION</div>
+      </div>
+    </div>
+    <div class="login-box">
+      <div class="eyebrow">Authorized Personnel Only</div>
+      <h2>Sign in to Archive</h2>
+      <div class="field">
+        <label>Staff ID</label>
+        <input type="text" id="loginId" autocomplete="off" placeholder="e.g. proctor">
+      </div>
+      <div class="field pass-wrap">
+        <label>Passkey</label>
+        <input type="password" id="loginPass" placeholder="••••••••">
+        <button type="button" class="pass-toggle" onclick="togglePassVisibility('loginPass', this)">Show</button>
+      </div>
+      <div class="err-msg" id="loginErr">Invalid Staff ID or Passkey.</div>
+      <button class="btn btn-primary btn-block" id="loginBtn" onclick="signIn()">Enter Archive ➔</button>
+    </div>
+  </div>
+</div>
+
+<!-- hidden owner login modal -->
+<div class="modal-overlay" id="ownerModal">
+  <div class="modal-box">
+    <h3>Sealed Entry</h3>
+    <div class="sub">THIS PASSAGE IS NOT LISTED IN THE ARCHIVE DIRECTORY</div>
+    <div class="field">
+      <label>Owner ID</label>
+      <input type="text" id="ownerId" autocomplete="off" placeholder="wicked">
+    </div>
+    <div class="field pass-wrap">
+      <label>Owner Passkey</label>
+      <input type="password" id="ownerPass" placeholder="••••••••">
+      <button type="button" class="pass-toggle" onclick="togglePassVisibility('ownerPass', this)">Show</button>
+    </div>
+    <div class="err-msg" id="ownerErr">Access denied.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOwnerModal()">Close</button>
+      <button class="btn btn-danger" style="flex:1;" onclick="ownerSignIn()">Break Seal ➔</button>
+    </div>
+  </div>
+</div>
+
+<!-- confirm modal (used for delete / wipe) -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box confirm">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <div class="sub" id="confirmSub">This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn" style="flex:1;" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;" id="confirmActionBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════ APP SHELL ═════════ -->
+<div id="appShell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="mark small">G</div>
+      <div class="sb-brand-text">Tribunal Archive<small>PROJECT GMI</small></div>
+    </div>
+    <div class="nav-item active" data-view="dashboard" onclick="setView('dashboard')">
+      <span class="ic">&#9670;</span> Dashboard
+    </div>
+    <div class="nav-item" data-view="records" onclick="setView('records')">
+      <span class="ic">&#9670;</span> Case Archive
+    </div>
+    <div class="nav-item" data-view="add" onclick="setView('add')">
+      <span class="ic">&#9670;</span> File New Case
+    </div>
+    <div id="ownerNavSection" style="display:none;">
+      <div class="nav-section-label">Owner Clearance</div>
+      <div class="nav-item" data-view="owner" onclick="setView('owner')">
+        <span class="ic">&#9670;</span> Owner Tools
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div id="roleChip" class="role-chip">—</div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-sm" style="width:100%;" onclick="signOut()">Log Out ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu"><span></span><span></span><span></span></button>
+        <h2 id="viewTitle">Dashboard</h2>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-user" id="topbarUser">—</span>
+      </div>
+    </div>
+    <div class="content" id="content">
+      <div class="loading-line">LOADING ARCHIVE SYSTEM…</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   SUPABASE CLIENT & CREDENTIAL DICTIONARY
+   ═══════════════════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://bxbonchmmngxbpqjzjbc.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_xdV9uHV5YMBL9T5XOXbBxg_tZ6G4R-L';
+let supabaseClient = null;
+
+if(SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && typeof supabase !== 'undefined'){
+  try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e) {
+    console.warn('Supabase client init exception:', e);
+  }
+}
+
+// Role metadata only — no credentials live in client source. Real authentication
+// is handled entirely by Supabase Auth (see signIn/ownerSignIn below). This map
+// is used purely to render the read-only role reference table for owners.
+const STAFF_ROLE_REF = {
+  'holy staff members':   { label:'Holy Staff Member',  level:1, canAdd:true, canViewHighAlert:false, canDelete:false, isOwner:false },
+  'senior holy members':  { label:'Senior Holy Member', level:2, canAdd:true, canViewHighAlert:true,  canDelete:false, isOwner:false },
+  'staff':                { label:'Staff',              level:2, canAdd:true, canViewHighAlert:true,  canDelete:false, isOwner:false },
+  'proctor':               { label:'Proctor',            level:3, canAdd:true, canViewHighAlert:true,  canDelete:true,  isOwner:false },
+  'custodian':             { label:'Custodian',          level:3, canAdd:true, canViewHighAlert:true,  canDelete:true,  isOwner:false },
+  'wicked':                { label:'System Owner',       level:99,canAdd:true, canViewHighAlert:true,  canDelete:true,  isOwner:true }
+};
+
+const OFFENSE_TYPES = [
+  'Spamming','Harassment / Bullying','Hate Speech / Slurs','NSFW Content',
+  'Scamming / Phishing','Doxxing','Raiding / Trolling','Impersonation',
+  'Unauthorized Advertising','Threats of Violence','Ban Evasion','Other'
+];
+const SEVERITIES = ['Minor','Moderate','Severe'];
+const ACTIONS_TAKEN = [
+  'Verbal Warning','Formal Warning','Timeout / Mute','Kick','Temporary Ban','Permanent Ban','Role Stripped','Other'
+];
+
+let session = null;      // { id, label, level, canAdd, canViewHighAlert, canDelete, isOwner, uuid }
+let records = [];
+let auditLog = [];
+let currentView = 'dashboard';
+
+// Sample demonstration records for local demo preview
+const SAMPLE_RECORDS = [
+  {
+    id: 'demo-rec-1',
+    discordUsername: 'dark_phantom99',
+    discordId: '987654321098765432',
+    offenses: [{ type: 'Harassment / Bullying', severity: 'Severe', custom: '' }],
+    action: 'Temporary Ban',
+    notes: 'Repeated toxic behavior in public voice channels.',
+    addedBy: 'proctor',
+    addedByLabel: 'Proctor',
+    timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+    highAlert: true
+  },
+  {
+    id: 'demo-rec-2',
+    discordUsername: 'pixel_master',
+    discordId: '123456789012345678',
+    offenses: [{ type: 'Spamming', severity: 'Minor', custom: '' }],
+    action: 'Formal Warning',
+    notes: 'Posting excessive duplicate links in general chat.',
+    addedBy: 'staff',
+    addedByLabel: 'Staff',
+    timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
+    highAlert: false
+  }
+];
+
+/* ───────────────────── UI HELPERS ───────────────────── */
+function openOwnerModal(){ document.getElementById('ownerModal').classList.add('show'); }
+
+function togglePassVisibility(inputId, btnEl){
+  const el = document.getElementById(inputId);
+  if(el.type === 'password'){
+    el.type = 'text';
+    btnEl.textContent = 'Hide';
+  } else {
+    el.type = 'password';
+    btnEl.textContent = 'Show';
+  }
+}
+
+/* ───────────────────── STORAGE HELPERS (SUPABASE WITH LOCAL FALLBACK) ───────────────────── */
+async function loadRecords(){
+  try {
+    if(supabaseClient){
+      const { data, error } = await supabaseClient
+        .from('case_files')
+        .select(`
+          id,
+          discord_username,
+          discord_id,
+          action_taken,
+          notes,
+          added_by_label,
+          high_alert,
+          created_at,
+          staff_profiles!case_files_added_by_fkey ( staff_id ),
+          offenses ( position, offense_type, severity, custom_description )
+        `)
+        .order('created_at', { ascending: false });
+
+      if(!error && data && data.length > 0){
+        records = data.map(row => {
+          const sortedOffenses = (row.offenses || [])
+            .sort((a, b) => a.position - b.position)
+            .map(o => ({
+              type: o.offense_type,
+              severity: o.severity,
+              custom: o.custom_description || ''
+            }));
+
+          return {
+            id: row.id,
+            discordUsername: row.discord_username,
+            discordId: row.discord_id || '',
+            offenses: sortedOffenses,
+            action: row.action_taken,
+            notes: row.notes || '',
+            addedBy: row.staff_profiles ? row.staff_profiles.staff_id : '',
+            addedByLabel: row.added_by_label,
+            timestamp: row.created_at,
+            highAlert: row.high_alert
+          };
+        });
+        return;
+      }
+    }
+  } catch(e){
+    console.warn('Supabase loadRecords fallback:', e);
+  }
+
+  // Fallback to in-memory records if database not populated yet
+  if(!records || records.length === 0){
+    records = [...SAMPLE_RECORDS];
+  }
+}
+
+async function saveRecords(){
+  try {
+    if(!session) return false;
+
+    if(supabaseClient){
+      const { data: dbCases } = await supabaseClient.from('case_files').select('id');
+      const dbIdSet = new Set((dbCases || []).map(c => c.id));
+      const memoryIdSet = new Set(records.map(r => r.id));
+
+      const toDelete = [...dbIdSet].filter(id => !memoryIdSet.has(id));
+      if(toDelete.length > 0){
+        await supabaseClient.from('case_files').delete().in('id', toDelete);
+      }
+
+      const toAdd = records.filter(r => !dbIdSet.has(r.id));
+      for(const rec of toAdd){
+        const { data: newCase } = await supabaseClient
+          .from('case_files')
+          .insert({
+            id: rec.id,
+            discord_username: rec.discordUsername,
+            discord_id: rec.discordId || null,
+            action_taken: rec.action,
+            notes: rec.notes || null,
+            added_by: session.uuid,
+            added_by_label: rec.addedByLabel,
+            high_alert: rec.highAlert,
+            created_at: rec.timestamp
+          })
+          .select()
+          .single();
+
+        if(newCase && rec.offenses && rec.offenses.length > 0){
+          const offensesData = rec.offenses.map((o, idx) => ({
+            case_id: newCase.id,
+            position: idx + 1,
+            offense_type: o.type,
+            severity: o.severity,
+            custom_description: o.custom || null
+          }));
+          await supabaseClient.from('offenses').insert(offensesData);
+        }
+      }
+    }
+    return true;
+  } catch(e){
+    console.warn('saveRecords local fallback active:', e);
+    return true;
+  }
+}
+
+async function loadAudit(){
+  try {
+    if(!session || !session.isOwner){
+      auditLog = [];
+      return;
+    }
+
+    if(supabaseClient){
+      const { data, error } = await supabaseClient
+        .from('audit_log')
+        .select(`
+          id, action, record_id, actor_label, summary, created_at,
+          staff_profiles!audit_log_actor_id_fkey ( staff_id )
+        `)
+        .order('created_at', { ascending: false });
+
+      if(!error && data){
+        auditLog = data.map(a => ({
+          id: a.id,
+          action: a.action,
+          recordId: a.record_id,
+          actorId: a.staff_profiles ? a.staff_profiles.staff_id : '',
+          actorLabel: a.actor_label,
+          timestamp: a.created_at,
+          summary: a.summary
+        }));
+        return;
+      }
+    }
+  } catch(e){
+    console.warn('loadAudit fallback:', e);
+  }
+}
+
+async function saveAudit(){
+  try {
+    if(!session || !auditLog.length) return;
+    const latest = auditLog[0];
+    if(!latest) return;
+
+    if(supabaseClient){
+      await supabaseClient
+        .from('audit_log')
+        .insert({
+          id: latest.id,
+          action: latest.action,
+          record_id: latest.recordId || null,
+          actor_id: session.uuid,
+          actor_label: latest.actorLabel,
+          summary: latest.summary,
+          created_at: latest.timestamp
+        });
+    }
+  } catch(e){
+    console.warn('saveAudit fallback:', e);
+  }
+}
+
+function uid(){
+  return (typeof crypto !== 'undefined' && crypto.randomUUID) 
+    ? crypto.randomUUID() 
+    : Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) + ' · ' +
+         d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+function esc(s){ const d=document.createElement('div'); d.textContent = s==null?'':String(s); return d.innerHTML; }
+
+function toast(msg, isError){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (isError?' error':'');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(), 3600);
+}
+
+/* ───────────────────── MOBILE MENU ───────────────────── */
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+
+/* ───────────────────── AUTHENTICATION (SUPABASE + LOCAL FALLBACK) ───────────────────── */
+async function signIn(){
+  const idRaw = document.getElementById('loginId').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginErr');
+  const staffId = idRaw.toLowerCase();
+
+  let authSuccess = false;
+
+  // 1. Try Supabase Auth if client is configured
+  if(supabaseClient){
+    try {
+      const email = `${staffId.replace(/\s+/g, '.')}@staff.gmi.internal`;
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: pass
+      });
+
+      if(!error && data.user){
+        const { data: profile } = await supabaseClient
+          .from('staff_profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if(profile){
+          session = {
+            id: profile.staff_id,
+            label: profile.display_label,
+            level: profile.role_level,
+            canAdd: profile.can_add,
+            canViewHighAlert: profile.can_view_high_alert,
+            canDelete: profile.can_delete,
+            isOwner: profile.is_owner,
+            uuid: profile.id
+          };
+          authSuccess = true;
+        }
+      }
+    } catch(e) {
+      console.warn('Supabase auth fallback:', e);
+    }
+  }
+
+  if(!authSuccess){
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+  enterApp();
+}
+
+async function ownerSignIn(){
+  const idRaw = document.getElementById('ownerId').value.trim().toLowerCase();
+  const pass = document.getElementById('ownerPass').value;
+  const errEl = document.getElementById('ownerErr');
+
+  let authSuccess = false;
+
+  if(supabaseClient){
+    try {
+      const email = `${idRaw.replace(/\s+/g, '.')}@staff.gmi.internal`;
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: pass
+      });
+
+      if(!error && data.user){
+        const { data: profile } = await supabaseClient
+          .from('staff_profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if(profile && profile.is_owner){
+          session = {
+            id: profile.staff_id,
+            label: profile.display_label,
+            level: profile.role_level,
+            canAdd: profile.can_add,
+            canViewHighAlert: profile.can_view_high_alert,
+            canDelete: profile.can_delete,
+            isOwner: true,
+            uuid: profile.id
+          };
+          authSuccess = true;
+        }
+      }
+    } catch(e) {
+      console.warn('Supabase owner auth fallback:', e);
+    }
+  }
+
+  if(!authSuccess){
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+  closeOwnerModal();
+  enterApp();
+}
+
+async function signOut(){
+  session = null;
+  if(supabaseClient){
+    try { await supabaseClient.auth.signOut(); } catch(e){}
+  }
+  closeSidebar();
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginId').value='';
+  document.getElementById('loginPass').value='';
+}
+
+async function enterApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='flex';
+  document.getElementById('roleChip').textContent = session.label;
+  document.getElementById('roleChip').className = 'role-chip' + (session.isOwner ? ' owner':'');
+  document.getElementById('topbarUser').textContent = session.id + '  ·  ' + session.label;
+  document.getElementById('ownerNavSection').style.display = session.isOwner ? 'block' : 'none';
+  document.getElementById('content').innerHTML = '<div class="loading-line">LOADING ARCHIVE SYSTEM…</div>';
+  await Promise.all([loadRecords(), loadAudit()]);
+  setView('dashboard');
+}
+
+/* hidden trigger */
+document.getElementById('hiddenTrigger').addEventListener('click', ()=>{
+  document.getElementById('ownerModal').classList.add('show');
+});
+function closeOwnerModal(){
+  document.getElementById('ownerModal').classList.remove('show');
+  document.getElementById('ownerErr').style.display='none';
+  document.getElementById('ownerId').value='';
+  document.getElementById('ownerPass').value='';
+}
+['loginPass','loginId'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') signIn(); });
+});
+['ownerId','ownerPass'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') ownerSignIn(); });
+});
+
+/* confirm modal helper */
+function openConfirm(title, sub, onConfirm){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmSub').textContent = sub;
+  const btn = document.getElementById('confirmActionBtn');
+  const fresh = btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh, btn);
+  fresh.addEventListener('click', async ()=>{ closeConfirmModal(); await onConfirm(); });
+  document.getElementById('confirmModal').classList.add('show');
+}
+function closeConfirmModal(){ document.getElementById('confirmModal').classList.remove('show'); }
+
+/* ───────────────────── VIEW ROUTER ───────────────────── */
+function setView(view){
+  if(view==='owner' && !session.isOwner) return;
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  const titles = { dashboard:'Dashboard', records:'Case Archive', add:'File New Case', owner:'Owner Tools' };
+  document.getElementById('viewTitle').textContent = titles[view] || '';
+  const c = document.getElementById('content');
+  if(view==='dashboard') c.innerHTML = renderDashboard();
+  else if(view==='records') { c.innerHTML = renderRecordsView(); wireRecordsFilters(); }
+  else if(view==='add') { c.innerHTML = renderAddForm(); wireAddForm(); }
+  else if(view==='owner') c.innerHTML = renderOwnerTools();
+  if(window.innerWidth < 900) closeSidebar();
+  window.scrollTo(0,0);
+}
+
+/* ───────────────────── HIGH ALERT LOGIC ───────────────────── */
+function computeHighAlert(newOffenses, discordUsername){
+  const severeFlag = newOffenses.some(o=>o.severity==='Severe');
+  const priorCount = records.filter(r=>r.discordUsername.toLowerCase()===discordUsername.toLowerCase()).length;
+  const repeatOffender = priorCount >= 2;
+  return { highAlert: severeFlag || repeatOffender, severeFlag, repeatOffender };
+}
+
+function visibleRecords(){
+  const sorted = [...records].sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+  if(session.canViewHighAlert) return { list: sorted, hiddenCount: 0 };
+  const list = sorted.filter(r=>!r.highAlert);
+  return { list, hiddenCount: sorted.length - list.length };
+}
+
+/* ───────────────────── DASHBOARD ───────────────────── */
+function renderDashboard(){
+  const total = records.length;
+  const highAlertCount = records.filter(r=>r.highAlert).length;
+  const weekAgo = Date.now() - 7*24*60*60*1000;
+  const thisWeek = records.filter(r=> new Date(r.timestamp).getTime() >= weekAgo).length;
+  const freq = {};
+  records.forEach(r=> r.offenses.forEach(o=>{ const t=o.type==='Other'?(o.custom||'Other'):o.type; freq[t]=(freq[t]||0)+1; }));
+  const topOffense = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+
+  const { list, hiddenCount } = visibleRecords();
+  const recent = list.slice(0,5);
+
+  return `
+    <div class="stat-grid">
+      <div class="stat-card" onclick="setView('records')"><div class="num">${total}</div><div class="lbl">Total Case Files</div></div>
+      ${session.canViewHighAlert
+        ? `<div class="stat-card" onclick="setView('records')"><div class="num">${highAlertCount}</div><div class="lbl">High Alert Cases</div></div>`
+        : `<div class="stat-card locked">HIGH ALERT DATA<br>RESTRICTED</div>`}
+      <div class="stat-card" onclick="setView('records')"><div class="num">${thisWeek}</div><div class="lbl">Filed This Week</div></div>
+      <div class="stat-card"><div class="num" style="font-size:16px;">${topOffense ? esc(topOffense[0]) : '—'}</div><div class="lbl">Most Common Offense</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Recently Filed Cases</h3></div>
+      <div class="panel-body">
+        ${hiddenCount>0 ? `<div class="restricted-note">${hiddenCount} high-alert case${hiddenCount>1?'s':''} not shown — restricted to Senior Holy Members and above.</div>` : ''}
+        ${recent.length ? recent.map(r=>recordCardHTML(r)).join('') : `<div class="empty-state">No case files filed yet. Use "File New Case" to begin.</div>`}
+      </div>
+    </div>
+  `;
+}
+
+/* ───────────────────── RECORD CARD ───────────────────── */
+function recordCardHTML(r){
+  const sevClass = s => s==='Severe' ? 'sev-severe' : s==='Moderate' ? 'sev-moderate' : 'sev-minor';
+  const offensesHTML = r.offenses.map(o=>{
+    const label = o.type==='Other' ? (o.custom || 'Other') : o.type;
+    return `<span class="off-pill">${esc(label)} <span class="badge ${sevClass(o.severity)}">${o.severity}</span></span>`;
+  }).join('');
+  const canDelete = session.canDelete;
+  return `
+    <div class="record-card ${r.highAlert?'alert':''}">
+      <div class="mark small ${r.highAlert?'danger':''}" title="${r.highAlert?'High Alert':'Filed'}">${r.highAlert?'!':'✓'}</div>
+      <div class="rc-main">
+        <div class="rc-top">
+          <span class="rc-user">${esc(r.discordUsername)}</span>
+          ${r.discordId ? `<span class="rc-id">ID ${esc(r.discordId)}</span>` : ''}
+          ${r.highAlert && session.canViewHighAlert ? `<span class="badge alert-badge">High Alert</span>` : ''}
+        </div>
+        <div class="rc-offenses">${offensesHTML}</div>
+        <div><span class="badge">Action: ${esc(r.action)}</span></div>
+        ${r.notes ? `<div class="rc-notes">"${esc(r.notes)}"</div>` : ''}
+        <div class="rc-meta">Filed by ${esc(r.addedByLabel)} (${esc(r.addedBy)}) · ${fmtDate(r.timestamp)}</div>
+      </div>
+      ${canDelete ? `<div class="rc-actions"><button class="btn btn-sm btn-danger" onclick="deleteRecord('${r.id}')">Delete</button></div>` : ''}
+    </div>
+  `;
+}
+
+async function deleteRecord(id){
+  const rec = records.find(r=>r.id===id);
+  if(!rec) return;
+  openConfirm('Delete Case File', `Remove the record for ${rec.discordUsername}? This cannot be undone.`, async ()=>{
+    records = records.filter(r=>r.id!==id);
+    const ok = await saveRecords();
+    if(ok){
+      auditLog.unshift({ id:uid(), action:'delete', recordId:id, actorId:session.id, actorLabel:session.label,
+        timestamp:new Date().toISOString(), summary:`Deleted case file for ${rec.discordUsername}` });
+      await saveAudit();
+      toast('Case file deleted.');
+      setView(currentView);
+    }
+  });
+}
+
+/* ───────────────────── RECORDS ARCHIVE VIEW ───────────────────── */
+function renderRecordsView(){
+  const { list, hiddenCount } = visibleRecords();
+  return `
+    <div class="filters-row">
+      <div class="field">
+        <label>Search Discord Username</label>
+        <input type="text" id="fSearch" placeholder="Type a username…">
+      </div>
+      <div class="field">
+        <label>Filter by Offense</label>
+        <select id="fOffense"><option value="">All Offenses</option>${OFFENSE_TYPES.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>
+      </div>
+    </div>
+    ${hiddenCount>0 ? `<div class="restricted-note">${hiddenCount} high-alert case${hiddenCount>1?'s':''} hidden — restricted to Senior Holy Members and above.</div>` : ''}
+    <div id="recordsList">
+      ${list.length ? list.map(r=>recordCardHTML(r)).join('') : `<div class="empty-state">No case files match.</div>`}
+    </div>
+  `;
+}
+function wireRecordsFilters(){
+  const search = document.getElementById('fSearch');
+  const offSel = document.getElementById('fOffense');
+  function apply(){
+    const { list } = visibleRecords();
+    const q = search.value.trim().toLowerCase();
+    const off = offSel.value;
+    const filtered = list.filter(r=>{
+      const matchQ = !q || r.discordUsername.toLowerCase().includes(q);
+      const matchOff = !off || r.offenses.some(o=> (o.type==='Other'?o.custom:o.type) === off);
+      return matchQ && matchOff;
+    });
+    document.getElementById('recordsList').innerHTML = filtered.length ? filtered.map(r=>recordCardHTML(r)).join('') : `<div class="empty-state">No case files match.</div>`;
+  }
+  search.addEventListener('input', apply);
+  offSel.addEventListener('change', apply);
+}
+
+/* ───────────────────── ADD RECORD FORM ───────────────────── */
+function offenseBlockHTML(idx){
+  return `
+    <div class="offense-block" data-idx="${idx}">
+      <div class="offense-block-title">Offense ${idx}${idx>1?' (optional)':''}</div>
+      <div class="row2">
+        <div class="field">
+          <label>Type</label>
+          <select class="off-type" data-idx="${idx}">
+            ${idx>1?'<option value="">— none —</option>':''}
+            ${OFFENSE_TYPES.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Severity</label>
+          <select class="off-severity" data-idx="${idx}">
+            ${SEVERITIES.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field off-custom-wrap" data-idx="${idx}" style="display:none;">
+        <label>Describe the offense</label>
+        <input type="text" class="off-custom" data-idx="${idx}" placeholder="Brief description">
+      </div>
+    </div>
+  `;
+}
+
+function renderAddForm(){
+  return `
+    <div class="panel">
+      <div class="panel-head"><h3>New Case File</h3></div>
+      <div class="panel-body">
+        <div class="row2">
+          <div class="field">
+            <label>Discord Username *</label>
+            <input type="text" id="nUsername" placeholder="e.g. shadow.wolf">
+          </div>
+          <div class="field">
+            <label>Discord ID (optional)</label>
+            <input type="text" id="nDiscordId" placeholder="e.g. 928374651029384756">
+          </div>
+        </div>
+
+        <div id="offenseBlocks">
+          ${offenseBlockHTML(1)}${offenseBlockHTML(2)}${offenseBlockHTML(3)}
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Action Taken *</label>
+            <select id="nAction">${ACTIONS_TAKEN.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('')}</select>
+          </div>
+          <div class="field">
+            <label>Filed By</label>
+            <input type="text" value="${esc(session.label)} (${esc(session.id)})" disabled style="opacity:0.6;">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Notes (optional)</label>
+          <textarea id="nNotes" placeholder="Additional context, links to evidence, witness names…"></textarea>
+        </div>
+
+        <div class="err-msg" id="addErr">Discord username and at least one offense are required.</div>
+        <button class="btn btn-primary" onclick="submitRecord()">File Case ➔</button>
+      </div>
+    </div>
+  `;
+}
+
+function wireAddForm(){
+  document.querySelectorAll('.off-type').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const idx = sel.dataset.idx;
+      const wrap = document.querySelector(`.off-custom-wrap[data-idx="${idx}"]`);
+      wrap.style.display = sel.value === 'Other' ? 'block' : 'none';
+    });
+  });
+}
+
+async function submitRecord(){
+  const username = document.getElementById('nUsername').value.trim();
+  const discordId = document.getElementById('nDiscordId').value.trim();
+  const action = document.getElementById('nAction').value;
+  const notes = document.getElementById('nNotes').value.trim();
+  const errEl = document.getElementById('addErr');
+
+  const offenses = [];
+  for(let i=1;i<=3;i++){
+    const type = document.querySelector(`.off-type[data-idx="${i}"]`).value;
+    if(!type) continue;
+    const severity = document.querySelector(`.off-severity[data-idx="${i}"]`).value;
+    const custom = document.querySelector(`.off-custom[data-idx="${i}"]`).value.trim();
+    offenses.push({ type, severity, custom: type==='Other' ? custom : '' });
+  }
+
+  if(!username || offenses.length===0){
+    errEl.style.display='block';
+    return;
+  }
+  errEl.style.display='none';
+
+  const { highAlert } = computeHighAlert(offenses, username);
+  const rec = {
+    id: uid(),
+    discordUsername: username,
+    discordId,
+    offenses,
+    action,
+    notes,
+    addedBy: session.id,
+    addedByLabel: session.label,
+    timestamp: new Date().toISOString(),
+    highAlert
+  };
+
+  await loadRecords();
+  records.push(rec);
+  const ok = await saveRecords();
+  if(ok){
+    auditLog.unshift({ id:uid(), action:'add', recordId:rec.id, actorId:session.id, actorLabel:session.label,
+      timestamp:new Date().toISOString(), summary:`Filed case for ${username} (${offenses.length} offense${offenses.length>1?'s':''})` });
+    await saveAudit();
+    toast(highAlert ? 'Case filed — flagged HIGH ALERT.' : 'Case filed successfully.');
+    setView('records');
+  }
+}
+
+/* ───────────────────── OWNER TOOLS ───────────────────── */
+function renderOwnerTools(){
+  const roleRows = Object.entries(STAFF_ROLE_REF).map(([id,r])=>`
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:12px;font-weight:700;">${esc(id)}</td>
+      <td>${esc(r.label)}</td>
+      <td style="text-align:center;">${r.canAdd?'✓':'—'}</td>
+      <td style="text-align:center;">${r.canViewHighAlert?'✓':'—'}</td>
+      <td style="text-align:center;">${r.canDelete?'✓':'—'}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="panel">
+      <div class="panel-head"><h3>Role Reference</h3></div>
+      <div class="panel-body" style="overflow-x:auto;">
+        <table class="role-table">
+          <thead>
+            <tr>
+              <th>STAFF ID</th><th>LABEL</th><th>FILE CASE</th><th>HIGH ALERT</th><th>DELETE</th>
+            </tr>
+          </thead>
+          <tbody>${roleRows}</tbody>
+        </table>
+        <p style="margin-top:14px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);">
+          Passwords are managed in the Supabase dashboard under Authentication → Users, not shown here.
+        </p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Audit Trail Log</h3></div>
+      <div class="panel-body">
+        ${auditLog.length ? auditLog.slice(0,40).map(a=>`
+          <div class="audit-row">
+            <div>
+              <span class="a-action ${a.action}">${a.action}</span>
+              <span style="margin-left:10px;font-weight:600;">${esc(a.summary)}</span>
+            </div>
+            <div class="a-time">${esc(a.actorLabel)} · ${fmtDate(a.timestamp)}</div>
+          </div>
+        `).join('') : `<div class="empty-state">No activity recorded yet.</div>`}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Danger Zone</h3></div>
+      <div class="panel-body">
+        <div class="danger-zone">
+          <p>Wiping the archive permanently deletes every case file and audit entry for all staff. This cannot be undone.</p>
+          <button class="btn btn-danger" onclick="wipeArchive()">Wipe All Records ➔</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function wipeArchive(){
+  openConfirm('Wipe Entire Archive', 'This will permanently delete ALL case files and the audit log. Confirm to proceed.', async ()=>{
+    records = [];
+    auditLog = [];
+    const ok = await saveRecords();
+    await saveAudit();
+    if(ok){ toast('Archive wiped.'); setView('owner'); }
+  });
+}
+
+/* ───────────────────── INIT ───────────────────── */
+document.getElementById('loginScreen').style.display='flex';
+</script>
+</body>
+</html>
